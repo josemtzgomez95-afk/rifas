@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Sorteo Saltyork</title>
+
+<style>
+body{
+    background:#111;
+    font-family: Arial, sans-serif;
+    text-align:center;
+    color:white;
+}
+
+img{
+    width:300px;
+    margin:20px auto;
+    display:block;
+}
+
+h1{ color:gold; }
+
+#numeros{
+    display:grid;
+    grid-template-columns:repeat(10, 1fr);
+    gap:10px;
+    max-width:600px;
+    margin:20px auto;
+}
+
+/* BOTONES */
+.numero{
+    background:white;
+    color:black;
+    padding:12px;
+    border-radius:8px;
+    cursor:pointer;
+    font-weight:bold;
+    border:2px solid #ccc;
+}
+
+.numero:hover{
+    background:#eee;
+}
+
+/* ESTADOS */
+.ocupado{
+    background:red;
+    color:white;
+    cursor:not-allowed;
+}
+
+.seleccionado{
+    background:gold;
+    color:black;
+}
+
+/* PAGAR */
+#pagar{
+    display:none;
+    background:green;
+    color:white;
+    border:none;
+    padding:15px 30px;
+    font-size:18px;
+    border-radius:10px;
+    cursor:pointer;
+    margin-bottom:20px;
+}
+
+#lista{
+    margin-bottom:20px;
+    font-size:18px;
+}
+</style>
+</head>
+
+<body>
+
+<img src="saltyork.png.jpeg">
+
+<h1>🎉 Sorteo Saltyork 🎉</h1>
+<p>Selecciona uno o varios boletos</p>
+
+<div id="numeros"></div>
+
+<div id="lista"></div>
+
+<button id="pagar">💳 Pagar boletos</button>
+
+<script>
+const contenedor = document.getElementById("numeros");
+const btnPagar = document.getElementById("pagar");
+const lista = document.getElementById("lista");
+
+const TIEMPO_LIMITE = 60 * 60 * 1000; // 1 hora
+
+let data = JSON.parse(localStorage.getItem("rifa")) || {
+    ocupados: [],
+    apartados: {}
+};
+
+let seleccionados = [];
+
+// LIMPIAR APARTADOS VENCIDOS
+const ahora = Date.now();
+for (let num in data.apartados) {
+    if (ahora - data.apartados[num] > TIEMPO_LIMITE) {
+        delete data.apartados[num];
+    }
+}
+localStorage.setItem("rifa", JSON.stringify(data));
+
+// CREAR BOLETOS
+for(let i=1;i<=100;i++){
+    const btn = document.createElement("div");
+    btn.textContent = i;
+    btn.className = "numero";
+
+    if(data.ocupados.includes(i)){
+        btn.classList.add("ocupado");
+    }
+    else if(data.apartados[i]){
+        btn.classList.add("seleccionado");
+    }
+
+    btn.onclick = () => {
+        if(data.ocupados.includes(i)) return;
+
+        if(seleccionados.includes(i)){
+            seleccionados = seleccionados.filter(n => n !== i);
+            btn.classList.remove("seleccionado");
+            delete data.apartados[i];
+        } else {
+            seleccionados.push(i);
+            btn.classList.add("seleccionado");
+            data.apartados[i] = Date.now();
+        }
+
+        actualizarVista();
+        localStorage.setItem("rifa", JSON.stringify(data));
+    };
+
+    contenedor.appendChild(btn);
+}
+
+function actualizarVista(){
+    if(seleccionados.length > 0){
+        btnPagar.style.display = "inline-block";
+        lista.innerHTML = "🎟️ Boletos seleccionados: <b>" + seleccionados.join(", ") + "</b>";
+    } else {
+        btnPagar.style.display = "none";
+        lista.innerHTML = "";
+    }
+}
+
+// PAGAR
+btnPagar.onclick = () => {
+    seleccionados.forEach(n => {
+        data.ocupados.push(n);
+        delete data.apartados[n];
+    });
+
+    localStorage.setItem("rifa", JSON.stringify(data));
+
+    const telefono = "5218443431195";
+    const mensaje = "Hola, quiero pagar los boletos: " + seleccionados.join(", ") + " del Sorteo Saltyork 🎉";
+
+    window.open(
+        "https://wa.me/" + telefono + "?text=" + encodeURIComponent(mensaje),
+        "_blank"
+    );
+
+    location.reload();
+};
+</script>
+
+</body>
+</html>
